@@ -57,3 +57,5 @@ def log_error(e):
 raw_html = simple_get('https://www.audible.com/special-promo/2for1/cat?ref=a_special-p_l1_catRefs_0&searchCategory=211&ref=a_special-p_c2_showmore&pf_rd_p=2aa65428-a2ee-47af-abab-dbefbc452d55&pf_rd_r=GQK6YWTSF6QVGSZGH1FG&')
 html = BeautifulSoup(raw_html, 'html.parser')
 print(html)
+
+#testing
