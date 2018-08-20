@@ -1,8 +1,11 @@
-from requests import get
+import requests
+#from requests import get
+#from requests import post
+#from requests import session
 from requests.exceptions import RequestException
 from contextlib import closing
 from bs4 import BeautifulSoup
-
+import config #you must update the config.py with your Audible Amazon account information before the script will work.
 
 def simple_get(url):
     """
@@ -53,9 +56,69 @@ def log_error(e):
     """
     print(e)
 
+#Source: https://pybit.es/requests-session.html
+#Source: http://theautomatic.net/2017/08/19/logging-into-amazon-with-python/
 
-raw_html = simple_get('https://www.audible.com/special-promo/2for1/cat?ref=a_special-p_l1_catRefs_0&searchCategory=211&ref=a_special-p_c2_showmore&pf_rd_p=2aa65428-a2ee-47af-abab-dbefbc452d55&pf_rd_r=GQK6YWTSF6QVGSZGH1FG&')
-html = BeautifulSoup(raw_html, 'html.parser')
-print(html)
+#Request URL - page I want to scrape
+getURL = 'https://www.audible.com/ep/DD-Resale'
 
-#testing
+#define URL where login form is located
+loginURL = 'https://www.amazon.com/gp/sign-in.html'
+
+#initiate session
+session = requests.Session()
+
+#define session headers
+session.headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.61 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Referer': loginURL
+}
+
+#get login page
+resp = session.get(loginURL)
+html = resp.text
+
+#get BeautifulSoup object of the html of the login page
+soup = BeautifulSoup(html, 'lxml')
+
+#scrape login page to get all the needed inputs required for login
+data = {}
+form = soup.find('form', {'name': 'signIn'})
+for field in form.find_all('input'):
+    try:
+        data[field['name']] = field['value']
+
+    except:
+        pass
+
+#add username and password to the data for post request
+data[u'email'] = config.email
+data[u'password'] = config.password
+
+i=1
+
+while i < 6:
+    # submit post request with username / password and other needed info
+    post_resp = session.post('https://www.amazon.com/ap/signin/;', data=data)
+    post_soup = BeautifulSoup(post_resp.content, 'lxml')
+
+    if post_soup.find_all('title')[0].text == 'Your Account':
+        print('Login Successful')
+        break
+    elif i == 5:
+        print('Login Failed')
+        break
+    else:
+        print('Login In Progress')
+        i += 1
+
+raw = session.get(getURL)
+html = raw.content
+soup = BeautifulSoup(html, 'html.parser').encode("utf-8")
+#print(soup)
+
+session.close()
+
+
